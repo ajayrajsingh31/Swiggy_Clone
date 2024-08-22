@@ -1,7 +1,15 @@
+Sure, I can help you update your code. Here's the updated version based on the reference you provided:
+
+```yaml
 version: 0.2
 
 env:
+  variables:
+    DOCKER_USERNAME: "ajayrajsingh31"
+    IMAGE_NAME: "swiggy_clone"
+    IMAGE_TAG: "latest"
   parameter-store:
+    DOCKER_PASSWORD: "docker_password"
     DOCKER_REGISTRY_USERNAME: /cicd/docker-credentials/username
     DOCKER_REGISTRY_PASSWORD: /cicd/docker-credentials/password
     DOCKER_REGISTRY_URL: /cicd/docker-registry/url
@@ -30,13 +38,21 @@ phases:
       - unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
       - export PATH=$SONAR_SCANNER_HOME/bin:$PATH
       - export SONAR_SCANNER_OPTS="-server"
+      - echo Logging in to Docker Hub ...
+      - docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
 
   build:
     commands:
       - echo "Running tests..."
       - echo "Building Docker image..."
-      - echo "$DOCKER_REGISTRY_PASSWORD" | docker login -u "$DOCKER_REGISTRY_USERNAME" --password-stdin "$DOCKER_REGISTRY_URL"
-      - docker buildx build -t swiggy_clone:latest .
+      - docker buildx build -t $IMAGE_NAME:$IMAGE_TAG .
+      - docker tag $IMAGE_NAME:$IMAGE_TAG $DOCKER_USERNAME/$IMAGE_NAME:$IMAGE_TAG
+
+  post_build:
+    commands:
+      - echo "Build completed on $(date)"
+      - echo "Pushing the Docker image..."
+      - docker push $DOCKER_USERNAME/$IMAGE_NAME:$IMAGE_TAG
 
 artifacts:
   files:
